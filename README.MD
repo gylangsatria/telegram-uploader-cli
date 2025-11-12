@@ -65,6 +65,12 @@ Then run:
 python uploader.py
 ```
 
+Or if you use Docker, just simply run this docker container
+
+```bash
+docker compose up --build
+```
+
 ---
 
 ## Log Format
