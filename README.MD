@@ -41,8 +41,31 @@ docker compose version
 git clone https://github.com/your-username/telegram-hybrid-uploader.git
 cd telegram-hybrid-uploader
 ```
+### 3. Configure docker-compose.yml
 
-### 2. Create a `.env` file
+Example configuration with volume mapping
+
+```yaml
+version: '3.8'
+services:
+  telegram-uploader:
+    build: .
+    container_name: telegram-uploader
+    env_file:
+      - .env
+    volumes:
+      - "/media/your-local-folder:/media:ro"
+    develop:
+      watch:
+        - path: .
+          action: sync
+          target: /app
+        - path: requirements.txt
+          action: rebuild
+
+```
+
+### 4. Create or Edit a `.env` file
 
 ```env
 API_ID=your_api_id
@@ -55,7 +78,7 @@ UPLOAD_MODE=hybrid   # bisa "hybrid" atau "telethon"
 
 - **UPLOAD_MODE=telethon**: All files uploaded via Telethon
 
-### 3. Run with Docker compose
+### 5. Run with Docker compose
 
 ```bash
 docker compose up --build

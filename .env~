@@ -1,5 +1,0 @@
-API_ID=yourID
-API_HASH=yourHash
-BOT_TOKEN=yourBotToken
-GROUP_TARGET=YourGroupTarget
-UPLOAD_MODE=hybrid   # pilih "hybrid" atau "telethon"
