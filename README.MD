@@ -1,24 +1,41 @@
 
-# Telegram Hybrid Uploader
+# Telegram Hybrid Uploader (Docker Ready)
 
-A smart uploader that sends files to a Telegram group using a hybrid approach: **Bot API** for small files (≤50MB) and **Telethon** for larger ones. Ideal for batch uploads, speed tracking, and detailed logging.
+A smart uploader that sends files to a Telegram group using either a hybrid approach (Bot API + Telethon) or Telethon only, depending on configuration. Perfect for batch uploads, speed tracking, and detailed logging.
+
+With Docker, users only need to install Docker and Docker Compose—no manual Python setup required.
 
 ---
 
 ## Features
 
-- **Hybrid logic**: Automatically selects the best upload method based on file size.
-- **Interactive progress bar**: Uses `tqdm` for real-time feedback.
+- **Configurable upload mode**:
+  - **hybrid**: Bot API for small files (≤50 MB), Telethon for larger files.
+  - **telethon**: All files sent via Telethon (more stable, chunked upload).
+
+- **Interactive progress bar** with `tqdm`.
+
 - **Detailed logging**:
   - `upload.log` for successful uploads.
   - `error.log` for failed attempts.
-- **Speed stats**: Displays duration and estimated kbps per file.
+
+- **Speed stats**: duration and estimated kbps per file.
+
+- **Concurrency limit**: upload multiple files in parallel with controlled limits.
+
 
 ---
 
 ## Setup
 
-### 1. Clone the repository
+### 1. Install Docker & Docker Compose
+
+```bash
+docker --version
+docker compose version
+```
+
+### 2. Clone the repository
 
 ```bash
 git clone https://github.com/your-username/telegram-hybrid-uploader.git
@@ -32,45 +49,27 @@ API_ID=your_api_id
 API_HASH=your_api_hash
 BOT_TOKEN=your_bot_token
 GROUP_TARGET=your_group_id
+UPLOAD_MODE=hybrid   # bisa "hybrid" atau "telethon"
 ```
+- **UPLOAD_MODE=hybrid**: Bot API for files ≤50 MB, Telethon for files >50 MB.
 
-### 3. Install dependencies
+- **UPLOAD_MODE=telethon**: All files uploaded via Telethon
+
+### 3. Run with Docker compose
 
 ```bash
-pip install -r requirements.txt
-```
-
-Example `requirements.txt`:
-
-```
-telethon
-python-dotenv
-tqdm
-requests
+docker compose up --build
 ```
 
 ---
 
 ## Usage
 
-Edit the folder path at the bottom of the script:
+Docker will automatically:
 
-```python
-upload_folder("/media")
-```
-
-Then run:
-
-```bash
-python uploader.py
-```
-
-Or if you use Docker, just simply run this docker container
-
-```bash
-docker compose up --build
-```
-
+- **Build the image** with Python and dependencies.
+- **Mount the `/media` folder** as configured.
+- **Run the uploader** with the mode specified in `.env`.
 ---
 
 ## Log Format
@@ -79,43 +78,31 @@ docker compose up --build
 
 ```
 /media/file1.pdf | 12.34 MB | 3.21s | 312.45 kbps | Bot API
+/media/file2.zip | 120.00 MB | 25.00s | 4096.00 kbps | Telethon
 ```
 
 ### error.log
 
 ```
-/media/file2.zip — [Errno 13] Permission denied
+/media/file3.mp4 — Connection aborted
 ```
 
 ---
 
 ## Upload Logic
 
-| File Size     | Upload Method | Library     |
-|---------------|----------------|-------------|
-| ≤ 50 MB       | Bot API        | `requests`  |
-| > 50 MB       | Telethon       | `Telethon`  |
-
----
+| Mode     | File Size | Upload Method | Library   |
+|----------|-----------|---------------|-----------|
+| Hybrid   | ≤ 50 MB   | Bot API       | requests  |
+| Hybrid   | > 50 MB   | Telethon      | Telethon  |
+| Telethon | All files | Telethon      | Telethon  |
 
 ## Notes
 
-- Make sure your bot is added to the target group and has permission to send files.
-- Files larger than 2GB may fail depending on Telegram limits and your connection.
-- Upload speed may vary based on file size, network stability, and Telegram server response.
+- Ensure your bot is added to the target group with permission to send files.
+- Files larger than 2 GB may fail depending on Telegram limits and your connection.
+- For maximum throughput, use `UPLOAD_MODE=telethon` with larger chunk sizes and concurrency.
 
----
-
-## Next Steps
-
-Want to extend this project with:
-
-- ✅ Extension-based filtering
-- ✅ Multi-group routing
-- ✅ CDN fallback logic
-- ✅ Upload queue and retry mechanism
-
-Just open an issue or start a discussion!
 
 ---
 
