@@ -73,10 +73,11 @@ async def upload_telethon(full_path, semaphore):
                 await client.send_file(
                     group_target,
                     full_path,
-                    part_size_kb=4096,
+                    part_size_kb=8192,   # 8 MB chunk untuk percepat file kecil
                     use_cache=False,
                     progress_callback=progress_callback
                 )
+            end = time.time()
             print(f"Uploaded: {os.path.basename(full_path)}")
             with open("upload.log", "a") as log:
                 log.write(f"{full_path} | {size_bytes/1024/1024:.2f} MB | Telethon\n")
@@ -87,46 +88,36 @@ async def upload_telethon(full_path, semaphore):
                 err.write(f"{full_path} — {e}\n")
             return False
 
-# Hybrid uploader dengan verifikasi dan progress bar folder
+# Hybrid uploader dengan verifikasi, progress bar folder, dan paralel upload
 async def upload_folder(folder_path, concurrency=10):
     print(f"Starting upload from: {folder_path} (mode={upload_mode})")
     
     all_files = []
     for root, dirs, files in os.walk(folder_path):
-        for file in files:
+        for file in sorted(files):  # urutkan alfabet
             full_path = os.path.join(root, file)
             all_files.append(full_path)
 
     uploaded_files = load_uploaded_files()
     semaphore = asyncio.Semaphore(concurrency)
 
-    for full_path in tqdm(all_files, desc="Uploading files", unit="file"):
+    tasks = []
+    for full_path in all_files:
         if full_path in uploaded_files:
             print(f"Skipped (already uploaded): {os.path.basename(full_path)}")
             continue
 
         size_bytes = os.path.getsize(full_path)
         size_mb = size_bytes / (1024 * 1024)
-        start = time.time()
 
         if upload_mode == "hybrid" and size_mb <= 50:
-            success, info = upload_bot_api(full_path)
-            method = "Bot API"
-            end = time.time()
-            elapsed = end - start
-            kbps = (size_bytes * 8) / 1024 / elapsed if elapsed > 0 else 0
-            if success:
-                print(f"Uploaded: {os.path.basename(full_path)} via {method} — {size_mb:.2f} MB in {elapsed:.2f}s (~{kbps:.2f} kbps)")
-                with open("upload.log", "a") as log:
-                    log.write(f"{full_path} | {size_mb:.2f} MB | {elapsed:.2f}s | {kbps:.2f} kbps | {method}\n")
-            else:
-                print(f"Failed: {os.path.basename(full_path)} — {info}")
-                with open("error.log", "a") as err:
-                    err.write(f"{full_path} — {info}\n")
+            loop = asyncio.get_event_loop()
+            tasks.append(loop.run_in_executor(None, upload_bot_api, full_path))
         else:
-            await upload_telethon(full_path, semaphore)
+            tasks.append(upload_telethon(full_path, semaphore))
 
-        await asyncio.sleep(0.2)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    print("Upload selesai, total:", len(results))
 
 # Main runner
 async def main():
