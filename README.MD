@@ -50,6 +50,7 @@ version: '3.8'
 services:
   telegram-uploader:
     build: .
+    image: telegram_uploader:latest
     container_name: telegram-uploader
     env_file:
       - .env
